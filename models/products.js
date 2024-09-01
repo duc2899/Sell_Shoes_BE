@@ -7,21 +7,18 @@ const sizeSchema = new mongoose.Schema({
 });
 
 const productSechema = new mongoose.Schema({
-  code: { type: String, required: [true, "Code is required"], unique: true },
+  code: { type: String, required: [true, "Code is required"], unique: [true, "Code has been neutralized"] },
   name: { type: String, required: [true, "Name is required"] },
   category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Categories",
-    required: true,
+    type: String,
+    required: [true, "Category is required"]
   },
   origin: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Origins",
-    required: true,
+    type: String,
+    required: [true, "Origin is required"]
   },
   priceInit: { type: Number, required: [true, "Price is required"] },
   percentDiscount: { type: Number, require: false },
-  manufacturer: { type: String, required: [true, "Manufacturer is required"] },
   images: [{ type: String }],
   sizes: [sizeSchema],
   colors: [{ type: String, required: [true, "Color is required"] }],
