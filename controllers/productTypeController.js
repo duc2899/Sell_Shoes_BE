@@ -1,5 +1,6 @@
 const Categories = require("../models/categories");
 const Origins = require("../models/origins");
+const mongoose = require("mongoose");
 
 exports.createProductType = async (req, res, next) => {
   try {
@@ -66,7 +67,11 @@ exports.getCategories = async (req, res, next) => {
 exports.updateProducType = async (req, res, next) => {
   try {
     const { name, productType, id } = req.body;
-
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ status: 400, message: "Invalid ID format" });
+    }
     switch (productType) {
       case "Origins":
         const existingOrigin = await Origins.findOne({ origin: name });
@@ -133,11 +138,15 @@ exports.updateProducType = async (req, res, next) => {
 exports.deleteProductType = async (req, res, next) => {
   try {
     const { productType, id } = req.body;
-
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ status: 400, message: "Invalid ID format" });
+    }
     switch (productType) {
       case "Origins":
         const resultOrigin = await Origins.deleteOne(
-          { _id: id }, // Điều kiện tìm kiếm
+          { _id: id } // Điều kiện tìm kiếm
         );
         if (resultOrigin.matchedCount === 0) {
           return res
@@ -149,7 +158,7 @@ exports.deleteProductType = async (req, res, next) => {
           .send({ status: 200, message: "Delete a origin successfully" });
       case "Categories":
         const resultCategory = await Categories.deleteOne(
-          { _id: id }, // Điều kiện tìm kiếm
+          { _id: id } // Điều kiện tìm kiếm
         );
         if (resultCategory.matchedCount === 0) {
           return res
