@@ -125,7 +125,7 @@ exports.updLoadImage = async (req, res, next) => {
       if (req.files.image[i].path) {
         product.images.push({
           id: req.files.image[i].fileName,
-          url: req.files.image[i].path
+          url: req.files.image[i].path,
         });
       }
     }
@@ -140,9 +140,40 @@ exports.updLoadImage = async (req, res, next) => {
   }
 };
 
+exports.removeImages = async (req, res, next) => {
+  try {
+    const { images, id } = req.body;
+    const product = await handelCheckIdExit(id, res);
+
+    if (!product) return;
+    console.log(product);
+    console.log(images);
+    
+    
+    const newArrayImages = product.images.filter(
+      (obj) => !images.includes(obj._id.toString())
+    );
+    product.images = newArrayImages;
+    await product.save();
+    return res.status(200).send({
+      status: 200,
+      message: "Remove images successfully",
+    });
+  } catch (err) {
+    console.log(err);
+    handelError(err, res);
+  }
+};
+
 exports.checkIdExit = async (req, res, next) => {
   const { id } = req.query;
-  
+  const product = await handelCheckIdExit(id, res);
+  if (!product) return;
+  req.product = product;
+  next();
+};
+
+const handelCheckIdExit = async (id, res) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ status: 400, message: "Invalid ID format" });
   }
@@ -153,8 +184,7 @@ exports.checkIdExit = async (req, res, next) => {
       message: "Not found product",
     });
   }
-  req.product = product;
-  next();
+  return product;
 };
 
 const handelError = (err, res) => {

@@ -13,5 +13,6 @@ router.post(
   upload,
   productController.updLoadImage
 );
+router.post("/removeImages", productController.removeImages)
 
 module.exports = router;

@@ -30,6 +30,10 @@ const productSechema = new mongoose.Schema({
     },
   ],
   sizes: [sizeSchema],
+  design: {
+    type: String,
+    required: [true, "Design is required"],
+  },
   colors: [{ type: String, required: [true, "Color is required"] }],
   relesaeDate: { type: String, required: [true, "Relesae Date is required"] },
   createdAt: {
