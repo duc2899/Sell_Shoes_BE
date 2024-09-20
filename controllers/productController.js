@@ -1,15 +1,23 @@
 const Products = require("../models/products");
 const Categories = require("../models/categories");
 const Origins = require("../models/origins");
+const Designs = require("../models/desginer");
 const mongoose = require("mongoose");
 
 exports.createProduct = async (req, res, next) => {
   try {
-    const { origin, category, ...productData } = req.body;
+    const { origin, category, design, ...productData } = req.body;
 
     // Tìm kiếm ProductType dựa trên ObjectId
     const foundOrign = await Origins.findById(origin);
     const foundCategory = await Categories.findById(category);
+    const foundDesign = await Designs.findById(design);
+
+    if (!foundDesign) {
+      return res
+        .status(400)
+        .send({ status: 400, message: "Design does not exist" });
+    }
 
     if (!foundOrign) {
       return res
@@ -25,8 +33,9 @@ exports.createProduct = async (req, res, next) => {
 
     const product = new Products({
       ...productData,
-      origin: foundOrign.origin, // Lưu ObjectId của ProductType
-      category: foundCategory.category, // Lưu ObjectId của ProductType
+      origin: foundOrign.name, // Lưu ObjectId của ProductType
+      category: foundCategory.name, // Lưu ObjectId của ProductType
+      design: foundDesign.name,
     });
 
     await product.save();
@@ -41,11 +50,34 @@ exports.createProduct = async (req, res, next) => {
 
 exports.getAllProducts = async (req, res, next) => {
   try {
-    const products = await Products.find();
+    const { category, page = 1, limit = 10 } = req.query;  // Lấy tham số từ truy vấn
+    
+    // Xác định điều kiện lọc
+    const filter = {};
+    if (category) {
+      filter.category = category;  // Lọc theo category nếu có
+    }
+
+    // Tính toán phân trang
+    const skip = (page - 1) * limit;  // Tính toán số lượng sản phẩm cần bỏ qua
+
+    // Lấy sản phẩm với điều kiện lọc và phân trang
+    const products = await Products.find(filter).skip(skip).limit(parseInt(limit));
+
+    // Lấy tổng số sản phẩm để tính toán tổng số trang
+    const totalProducts = await Products.countDocuments(filter);
+    const totalPages = Math.ceil(totalProducts / limit);
+
     return res.status(200).send({
       status: 200,
-      message: "find products successfully",
+      message: "Find products successfully",
       data: products,
+      pagination: {
+        totalProducts,
+        totalPages,
+        currentPage: parseInt(page),
+        pageSize: parseInt(limit),
+      },
     });
   } catch (err) {
     handelError(err, res);
@@ -55,21 +87,34 @@ exports.getAllProducts = async (req, res, next) => {
 exports.updateProduct = async (req, res, next) => {
   try {
     const { id, data } = req.body;
+    const product = await handelCheckIdExit(id, res);
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res
-        .status(400)
-        .json({ status: 400, message: "Invalid ID format" });
+    if (!product._id) return;
+    if (data.design) {
+      const foundDesign = await Designs.findById(data.design);
+      if (!foundDesign) {
+        return res
+          .status(400)
+          .send({ status: 400, message: "Design does not exist" });
+      }
+    }
+    if (data.category) {
+      const foundCategory = await Categories.findById(data.category);
+      if (!foundCategory) {
+        return res
+          .status(400)
+          .send({ status: 400, message: "Category does not exist" });
+      }
+    }
+    if (data.design) {
+      const foundOrign = await Origins.findById(data.origin);
+      if (!foundOrign) {
+        return res
+          .status(400)
+          .send({ status: 400, message: "Origin does not exist" });
+      }
     }
 
-    const product = await Products.findById(id);
-
-    if (!product) {
-      return res.status(400).send({
-        status: 400,
-        message: "Not found product",
-      });
-    }
     // Chỉ cập nhật những trường được truyền vào từ req.body
     for (let key in data) {
       if (data[key] !== undefined || data[key] !== "_id") {
@@ -84,7 +129,6 @@ exports.updateProduct = async (req, res, next) => {
       message: "Update a product successfully",
     });
   } catch (err) {
-    console.log(err);
     handelError(err, res);
   }
 };
@@ -148,8 +192,7 @@ exports.removeImages = async (req, res, next) => {
     if (!product) return;
     console.log(product);
     console.log(images);
-    
-    
+
     const newArrayImages = product.images.filter(
       (obj) => !images.includes(obj._id.toString())
     );
@@ -168,7 +211,7 @@ exports.removeImages = async (req, res, next) => {
 exports.checkIdExit = async (req, res, next) => {
   const { id } = req.query;
   const product = await handelCheckIdExit(id, res);
-  if (!product) return;
+  if (!product._id) return;
   req.product = product;
   next();
 };
@@ -177,6 +220,7 @@ const handelCheckIdExit = async (id, res) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ status: 400, message: "Invalid ID format" });
   }
+
   const product = await Products.findById(id);
   if (!product) {
     return res.status(400).send({

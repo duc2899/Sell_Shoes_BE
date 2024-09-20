@@ -21,8 +21,12 @@ const productSechema = new mongoose.Schema({
     type: String,
     required: [true, "Origin is required"],
   },
-  priceInit: { type: Number, required: [true, "Price is required"] },
-  percentDiscount: { type: Number, require: false },
+  priceInit: {
+    type: Number,
+    required: [true, "Price is required"],
+    min: [0, "Price must be greater than 0"],
+  },
+  percentDiscount: { type: Number, require: false,  min: [0, "Discont cannot be a negative number"],  max: [100, "Price must be greater than 100%"],},
   images: [
     {
       id: { type: String },
@@ -48,7 +52,7 @@ const productSechema = new mongoose.Schema({
 
 // Middleware to update 'updatedAt' before saving the document
 productSechema.pre("save", function (next) {
-  this.updatedAt = moment.tz("Asia/Ho_Chi_Minh").toDate();
+  this.updateAt = moment.tz("Asia/Ho_Chi_Minh").toDate();
   next();
 });
 
