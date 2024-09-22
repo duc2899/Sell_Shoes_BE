@@ -3,6 +3,7 @@ const Categories = require("../models/categories");
 const Origins = require("../models/origins");
 const Designs = require("../models/desginer");
 const mongoose = require("mongoose");
+const deleteMultipleImages = require("../services/deleteImage");
 
 exports.createProduct = async (req, res, next) => {
   try {
@@ -38,10 +39,11 @@ exports.createProduct = async (req, res, next) => {
       design: foundDesign.name,
     });
 
-    await product.save();
+    const newProduct = await product.save();
     res.status(201).send({
       status: 201,
       message: "Create a product successfully",
+      data: newProduct,
     });
   } catch (err) {
     handelError(err, res);
@@ -50,19 +52,22 @@ exports.createProduct = async (req, res, next) => {
 
 exports.getAllProducts = async (req, res, next) => {
   try {
-    const { category, page = 1, limit = 10 } = req.query;  // Lấy tham số từ truy vấn
-    
+    const { category, page = 1, limit = 10 } = req.query; // Lấy tham số từ truy vấn
+
     // Xác định điều kiện lọc
     const filter = {};
     if (category) {
-      filter.category = category;  // Lọc theo category nếu có
+      filter.category = category; // Lọc theo category nếu có
     }
 
     // Tính toán phân trang
-    const skip = (page - 1) * limit;  // Tính toán số lượng sản phẩm cần bỏ qua
+    const skip = (page - 1) * limit; // Tính toán số lượng sản phẩm cần bỏ qua
 
     // Lấy sản phẩm với điều kiện lọc và phân trang
-    const products = await Products.find(filter).skip(skip).limit(parseInt(limit));
+    const products = await Products.find(filter)
+      .sort({ createdAt: -1 }) // Sắp xếp theo trường createdAt giảm dần
+      .skip(skip)
+      .limit(parseInt(limit));
 
     // Lấy tổng số sản phẩm để tính toán tổng số trang
     const totalProducts = await Products.countDocuments(filter);
@@ -135,7 +140,8 @@ exports.updateProduct = async (req, res, next) => {
 
 exports.deleteProudct = async (req, res, next) => {
   try {
-    const { id } = req.body;
+    const { id } = req.query;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
         .status(400)
@@ -149,6 +155,12 @@ exports.deleteProudct = async (req, res, next) => {
         message: "Not found product",
       });
     }
+
+    const imagePublicIds = product.images.map((img) => img.id);
+    if (imagePublicIds.length > 0) {
+      await deleteMultipleImages(imagePublicIds);
+    }
+
     await Products.deleteOne({
       _id: id,
     });
@@ -165,17 +177,18 @@ exports.deleteProudct = async (req, res, next) => {
 exports.updLoadImage = async (req, res, next) => {
   try {
     const { product } = req;
+
     for (let i = 0; i < req.files.image.length; i++) {
       if (req.files.image[i].path) {
         product.images.push({
-          id: req.files.image[i].fileName,
+          id: req.files.image[i].filename,
           url: req.files.image[i].path,
         });
       }
     }
     await product.save();
-    return res.status(200).send({
-      status: 200,
+    return res.status(201).send({
+      status: 201,
       message: "Upload images successfully",
     });
   } catch (err) {
@@ -214,6 +227,55 @@ exports.checkIdExit = async (req, res, next) => {
   if (!product._id) return;
   req.product = product;
   next();
+};
+
+exports.searchProducts = async (req, res, next) => {
+  try {
+    const { category, text, page = 1, limit = 10 } = req.query;
+
+    // Tạo điều kiện tìm kiếm
+    const filter = {};
+    if (category) {
+      filter.category = category;
+    }
+
+    // Nếu có text tìm kiếm theo name hoặc code
+    if (text) {
+      filter.$or = [
+        { name: { $regex: text, $options: "i" } }, // Tìm kiếm theo tên (không phân biệt chữ hoa/thường)
+        { code: { $regex: text, $options: "i" } }, // Tìm kiếm theo code (không phân biệt chữ hoa/thường)
+      ];
+    }
+
+    // Tính toán phân trang
+    const skip = (page - 1) * limit;
+
+    // Tìm kiếm và phân trang
+    const products = await Products.find(filter)
+      .sort({ createdAt: -1 }) // Sắp xếp mới nhất trước
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Tính tổng số sản phẩm để phân trang
+    const totalProducts = await Products.countDocuments(filter);
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Trả về kết quả
+    return res.status(200).send({
+      status: 200,
+      message: "Search products successfully",
+      data: products,
+      pagination: {
+        totalProducts,
+        totalPages,
+        currentPage: parseInt(page),
+        pageSize: parseInt(limit),
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    handelError(err, res); // Xử lý lỗi
+  }
 };
 
 const handelCheckIdExit = async (id, res) => {
