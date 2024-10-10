@@ -96,33 +96,33 @@ exports.updateProduct = async (req, res, next) => {
 
     if (!product._id) return;
     if (data.design) {
-      const foundDesign = await Designs.findById(data.design);
+      const foundDesign = await Designs.findOne({ name: data.design });
       if (!foundDesign) {
         return res
           .status(400)
-          .send({ status: 400, message: "Design does not exist" });
+          .send({ status: 404, message: "Design does not exist" });
       }
     }
     if (data.category) {
-      const foundCategory = await Categories.findById(data.category);
+      const foundCategory = await Categories.findOne({ name: data.category });
       if (!foundCategory) {
         return res
           .status(400)
-          .send({ status: 400, message: "Category does not exist" });
+          .send({ status: 404, message: "Category does not exist" });
       }
     }
     if (data.design) {
-      const foundOrign = await Origins.findById(data.origin);
+      const foundOrign = await Origins.findOne({ name: data.origin });
       if (!foundOrign) {
         return res
           .status(400)
-          .send({ status: 400, message: "Origin does not exist" });
+          .send({ status: 404, message: "Origin does not exist" });
       }
     }
 
     // Chỉ cập nhật những trường được truyền vào từ req.body
     for (let key in data) {
-      if (data[key] !== undefined || data[key] !== "_id") {
+      if (data[key] !== undefined) {
         product[key] = data[key];
       }
     }
@@ -177,7 +177,6 @@ exports.deleteProudct = async (req, res, next) => {
 exports.updLoadImage = async (req, res, next) => {
   try {
     const { product } = req;
-
     for (let i = 0; i < req.files.image.length; i++) {
       if (req.files.image[i].path) {
         product.images.push({
@@ -186,10 +185,11 @@ exports.updLoadImage = async (req, res, next) => {
         });
       }
     }
-    await product.save();
+    const resultProduct = await product.save();
     return res.status(201).send({
       status: 201,
       message: "Upload images successfully",
+      data: resultProduct.images,
     });
   } catch (err) {
     console.log(err);
@@ -200,24 +200,32 @@ exports.updLoadImage = async (req, res, next) => {
 exports.removeImages = async (req, res, next) => {
   try {
     const { images, id } = req.body;
+
+    // Kiểm tra nếu id tồn tại và lấy product
     const product = await handelCheckIdExit(id, res);
-
     if (!product) return;
-    console.log(product);
-    console.log(images);
 
-    const newArrayImages = product.images.filter(
-      (obj) => !images.includes(obj._id.toString())
-    );
-    product.images = newArrayImages;
-    await product.save();
+    // Kiểm tra nếu images là mảng và có phần tử
+    if (Array.isArray(images) && images.length > 0) {
+      // Lọc bỏ những hình ảnh có trong danh sách images
+      const newArrayImages = product.images.filter(
+        (obj) => !images.includes(obj._id.toString())
+      );
+      product.images = newArrayImages;
+    }
+
+    // Lưu lại product sau khi chỉnh sửa
+    const resultProduct = await product.save();
+
+    // Trả về phản hồi với danh sách images sau khi chỉnh sửa
     return res.status(200).send({
       status: 200,
       message: "Remove images successfully",
+      data: resultProduct.images, // Trả về danh sách images mới
     });
   } catch (err) {
     console.log(err);
-    handelError(err, res);
+    handelError(err, res); // Xử lý lỗi
   }
 };
 
@@ -244,7 +252,13 @@ exports.searchProducts = async (req, res, next) => {
       filter.$or = [
         { name: { $regex: text, $options: "i" } }, // Tìm kiếm theo tên (không phân biệt chữ hoa/thường)
         { code: { $regex: text, $options: "i" } }, // Tìm kiếm theo code (không phân biệt chữ hoa/thường)
+        { design: { $regex: text, $options: "i" } }, // Tìm kiếm theo code (không phân biệt chữ hoa/thường)
       ];
+
+      // Kiểm tra nếu text là ObjectId hợp lệ thì thêm điều kiện tìm kiếm theo _id
+      if (mongoose.Types.ObjectId.isValid(text)) {
+        filter.$or.push({ _id: new mongoose.Types.ObjectId(text) });
+      }
     }
 
     // Tính toán phân trang
@@ -285,8 +299,8 @@ const handelCheckIdExit = async (id, res) => {
 
   const product = await Products.findById(id);
   if (!product) {
-    return res.status(400).send({
-      status: 400,
+    return res.status(404).send({
+      status: 404,
       message: "Not found product",
     });
   }

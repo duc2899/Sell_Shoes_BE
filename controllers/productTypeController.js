@@ -81,8 +81,8 @@ exports.updateProductType = async (req, res, next) => {
         .send({ status: 404, message: `${type} not found` });
     }
     return res
-      .status(201)
-      .send({ status: 201, message: `Update a ${type} successfully` });
+      .status(200)
+      .send({ status: 200, message: `Update a ${type} successfully` });
   } catch (err) {
     console.log(err);
     return res.status(400).send({ status: 400, message: err.message });
@@ -91,7 +91,7 @@ exports.updateProductType = async (req, res, next) => {
 
 exports.deleteProductType = async (req, res, next) => {
   try {
-    const { type, id } = req.body;
+    const { type, id } = req.query;
 
     const Model = getModelByType(type, res);
     if (!Model) return;

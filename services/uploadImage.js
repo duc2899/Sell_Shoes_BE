@@ -15,7 +15,6 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "Test", // Thay thế bằng tên thư mục bạn muốn lưu ảnh
-    allowed_formats: ["jpg", "png"], // Các định dạng file được phép
   },
 });
 
