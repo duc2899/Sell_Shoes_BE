@@ -138,7 +138,7 @@ exports.updateProduct = async (req, res, next) => {
   }
 };
 
-exports.deleteProudct = async (req, res, next) => {
+exports.deleteProduct = async (req, res, next) => {
   try {
     const { id } = req.query;
 
@@ -174,7 +174,7 @@ exports.deleteProudct = async (req, res, next) => {
   }
 };
 
-exports.updLoadImage = async (req, res, next) => {
+exports.updLoadImages = async (req, res, next) => {
   try {
     const { product } = req;
     for (let i = 0; i < req.files.image.length; i++) {
@@ -209,9 +209,10 @@ exports.removeImages = async (req, res, next) => {
     if (Array.isArray(images) && images.length > 0) {
       // Lọc bỏ những hình ảnh có trong danh sách images
       const newArrayImages = product.images.filter(
-        (obj) => !images.includes(obj._id.toString())
+        (obj) => !images.includes(obj.id.toString())
       );
       product.images = newArrayImages;
+      await deleteMultipleImages(images)
     }
 
     // Lưu lại product sau khi chỉnh sửa
