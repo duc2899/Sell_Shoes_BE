@@ -9,27 +9,30 @@ exports.createProduct = async (req, res, next) => {
   try {
     const { origin, category, design, ...productData } = req.body;
 
-    // Tìm kiếm ProductType dựa trên ObjectId
-    const foundOrign = await Origins.findById(origin);
-    const foundCategory = await Categories.findById(category);
-    const foundDesign = await Designs.findById(design);
-
+    const foundDesign = await Designs.findOne({ name: design });
     if (!foundDesign) {
       return res
         .status(400)
-        .send({ status: 400, message: "Design does not exist" });
+        .send({ status: 404, message: "Design does not exist" });
     }
 
-    if (!foundOrign) {
-      return res
-        .status(400)
-        .send({ status: 400, message: "Origin does not exist" });
-    }
-
+    const foundCategory = await Categories.findOne({ name: category });
     if (!foundCategory) {
       return res
         .status(400)
-        .send({ status: 400, message: "Category does not exist" });
+        .send({ status: 404, message: "Category does not exist" });
+    }
+
+    const originExists = await Origins.findOne({ name: origin });
+    if (!originExists) {
+      return res.status(404).send({ status: 404, message: "Origin not found" });
+    }
+
+    const foundOrign = await Origins.findOne({ name: origin });
+    if (!foundOrign) {
+      return res
+        .status(400)
+        .send({ status: 404, message: "Origin does not exist" });
     }
 
     const product = new Products({
@@ -212,7 +215,7 @@ exports.removeImages = async (req, res, next) => {
         (obj) => !images.includes(obj.id.toString())
       );
       product.images = newArrayImages;
-      await deleteMultipleImages(images)
+      await deleteMultipleImages(images);
     }
 
     // Lưu lại product sau khi chỉnh sửa
