@@ -2,6 +2,7 @@ const Categories = require("../models/categories");
 const Designs = require("../models/desginer");
 const Origins = require("../models/origins");
 const mongoose = require("mongoose");
+const { handelError } = require("../utils/handelError");
 
 exports.createProductType = async (req, res, next) => {
   try {
@@ -54,7 +55,7 @@ exports.createProductType = async (req, res, next) => {
     });
   } catch (err) {
     console.log(err);
-    return res.status(400).send({ status: 400, message: err.message });
+    handelError(err, res);
   }
 };
 
@@ -91,8 +92,7 @@ exports.getProductType = async (req, res, next) => {
       data: result,
     });
   } catch (err) {
-    console.log(err);
-    return res.status(400).send({ status: 400, message: err.message });
+    handelError(err, res);
   }
 };
 
@@ -135,8 +135,7 @@ exports.updateProductType = async (req, res, next) => {
       .status(200)
       .send({ status: 200, message: `Update a ${type} successfully` });
   } catch (err) {
-    console.log(err);
-    return res.status(400).send({ status: 400, message: err.message });
+    handelError(err, res);
   }
 };
 
@@ -164,8 +163,7 @@ exports.deleteProductType = async (req, res, next) => {
       .status(200)
       .send({ status: 200, message: `Delete a ${type} successfully` });
   } catch (err) {
-    console.log(err);
-    return res.status(400).send({ status: 400, message: err.message });
+    handelError(err, res);
   }
 };
 
