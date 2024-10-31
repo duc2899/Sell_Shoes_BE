@@ -1,3 +1,4 @@
+// uploadImage.js
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
@@ -10,18 +11,29 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Cấu hình CloudinaryStorage với multer
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "Test", // Thay thế bằng tên thư mục bạn muốn lưu ảnh
-  },
-});
+// Hàm upload với thư mục động
+const createUploader = (folderName) => {
+  const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+      folder: folderName, // Nhận tên thư mục từ tham số đầu vào
+    },
+  });
 
-// Cấu hình multer
-const upload = multer({ storage: storage }).fields([
-  { name: "image", maxCount: 10 },
-]);
+  return multer({ storage: storage }).fields([{ name: "image", maxCount: 10 }]);
+};
 
+// Hàm upload ảnh từ URL
+const uploadImageFromUrl = async (imageUrl, folderName) => {
+  try {
+    const result = await cloudinary.uploader.upload(imageUrl, {
+      folder: folderName,
+    });
+    return result;
+  } catch (error) {
+    console.error("Error uploading image from URL:", error);
+    throw error;
+  }
+};
 
-module.exports = upload;
+module.exports = { createUploader, uploadImageFromUrl };

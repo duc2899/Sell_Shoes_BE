@@ -17,6 +17,11 @@ const productSechema = new mongoose.Schema({
     type: String,
     required: [true, "Category is required"],
   },
+  description: { type: String },
+  isHot: {
+    type: Boolean,
+    default: false,
+  },
   origin: {
     type: String,
     required: [true, "Origin is required"],
@@ -26,7 +31,12 @@ const productSechema = new mongoose.Schema({
     required: [true, "Price is required"],
     min: [0, "Price must be greater than 0"],
   },
-  percentDiscount: { type: Number, require: false,  min: [0, "Discont cannot be a negative number"],  max: [100, "Price must be greater than 100%"],},
+  percentDiscount: {
+    type: Number,
+    require: false,
+    min: [0, "Discont cannot be a negative number"],
+    max: [100, "Price must be greater than 100%"],
+  },
   images: [
     {
       id: { type: String },

@@ -191,12 +191,10 @@ exports.updLoadImages = async (req, res, next) => {
     }
     const resultProduct = await product.save();
     return res.status(201).send({
-      status: 201,
       message: "Upload images successfully",
       data: resultProduct.images,
     });
   } catch (err) {
-    console.log(err);
     handelError(err, res);
   }
 };
@@ -224,7 +222,6 @@ exports.removeImages = async (req, res, next) => {
 
     // Trả về phản hồi với danh sách images sau khi chỉnh sửa
     return res.status(200).send({
-      status: 200,
       message: "Remove images successfully",
       data: resultProduct.images, // Trả về danh sách images mới
     });
