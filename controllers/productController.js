@@ -5,6 +5,8 @@ const Designs = require("../models/desginer");
 const mongoose = require("mongoose");
 const deleteMultipleImages = require("../services/deleteImage");
 const { handelError } = require("../utils/handelError");
+const { isImageUrl, cleanImageUrl } = require("../utils/checkImageUrl");
+const { uploadImageFromUrl } = require("../services/uploadImage");
 
 exports.createProduct = async (req, res, next) => {
   try {
@@ -196,6 +198,46 @@ exports.updLoadImages = async (req, res, next) => {
     });
   } catch (err) {
     handelError(err, res);
+  }
+};
+
+// Hàm chính
+exports.updLoadImagesByUrl = async (req, res, next) => {
+  try {
+    const { urls } = req.body;
+    const { product } = req;
+    if (!Array.isArray(urls) || urls.length === 0) {
+      return res.status(400).json({ message: "No URLs provided" });
+    }
+
+    const validImageUrls = urls
+      .filter(isImageUrl) // Lọc URL có đuôi ảnh hợp lệ
+      .map(cleanImageUrl); // Xóa tham số truy vấn nếu có
+
+    if (validImageUrls.length === 0) {
+      return res.status(400).json({ message: "No valid image URLs found" });
+    }
+    // Upload từng ảnh từ URL hợp lệ
+    const uploadResults = await Promise.all(
+      validImageUrls.map((url) => uploadImageFromUrl(url, "Test"))
+    );
+    for (let i = 0; i < uploadResults.length; i++) {
+      if (uploadResults[i].url) {
+        product.images.push({
+          id: uploadResults[i].public_id,
+          url: uploadResults[i].url,
+        });
+      }
+    }
+    const resultProduct = await product.save();
+    return res.status(201).json({
+      message: "Images uploaded successfully",
+      data: resultProduct.images,
+    });
+  } catch (error) {
+    console.log(error);
+
+    handelError(error, res);
   }
 };
 

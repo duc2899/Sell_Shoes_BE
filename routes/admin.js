@@ -8,7 +8,6 @@ router.post(
   adminController.uploadInforClient
 );
 router.post("/deleteInforClient", adminController.deleteInforClient);
-router.post("/upLoadImageByUrl");
 router.get("/getInforClient", adminController.getInforClient);
 
 module.exports = router;

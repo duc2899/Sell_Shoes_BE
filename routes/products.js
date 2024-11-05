@@ -15,6 +15,12 @@ router.post(
   productController.updLoadImages
 );
 
+router.post(
+  "/upLoadImageByUrl",
+  productController.checkIdExit,
+  productController.updLoadImagesByUrl
+);
+
 router.post("/removeImages", productController.removeImages);
 
 module.exports = router;
