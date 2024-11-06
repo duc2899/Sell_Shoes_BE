@@ -64,20 +64,23 @@ exports.getInforClient = async (req, res, next) => {
 
 exports.getHotProducts = async (req, res, next) => {
   try {
-    const result = await Products.find({ isHot: true });
+    // Lấy giá trị limit từ query (nếu có), nếu không mặc định là 5
+    const limit = parseInt(req.query.limit) || 4;
+
+    const result = await Products.find({ isHot: true }).limit(limit);
+
     res.status(200).json({
       success: true,
       data: result,
     });
   } catch (error) {
-    handelError(err, res);
+    handelError(error, res);
   }
 };
 
 exports.getProductByName = async (req, res, next) => {
-  const { nameProduct } = req.query;
-
   try {
+    const { nameProduct } = req.query;
     const result = await Products.findOne({ name: nameProduct });
     return res.status(200).send({
       message: "success",
@@ -86,6 +89,120 @@ exports.getProductByName = async (req, res, next) => {
   } catch (err) {
     console.log(err);
 
+    handelError(err, res);
+  }
+};
+
+exports.getProductsByType = async (req, res, next) => {
+  try {
+    const {
+      filterType,
+      filterValue,
+      page = 1,
+      limit = 10,
+      sort,
+      minPrice,
+      maxPrice,
+    } = req.query;
+    const pageNum = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+    const skip = (pageNum - 1) * pageSize;
+
+    // Khởi tạo bộ lọc, chỉ thêm điều kiện nếu filterType và filterValue hợp lệ
+    const filter = {};
+
+    if (minPrice || maxPrice) {
+      filter.priceInit = {};
+      if (minPrice) filter.priceInit.$gte = parseFloat(minPrice); // Lọc giá >= minPrice
+      if (maxPrice) filter.priceInit.$lte = parseFloat(maxPrice); // Lọc giá <= maxPrice
+    }
+
+    if (
+      filterType &&
+      filterValue &&
+      ["origin", "design"].includes(filterType)
+    ) {
+      filter[filterType] = filterValue;
+    }
+
+    // Xác định tùy chọn sắp xếp dựa trên tham số `sort`
+    let sortOption = { createdAt: -1 }; // mặc định sắp xếp từ mới nhất
+    switch (sort) {
+      case "name_asc":
+        sortOption = { name: 1 }; // Sắp xếp tên từ A → Z
+        break;
+      case "name_desc":
+        sortOption = { name: -1 }; // Sắp xếp tên từ Z → A
+        break;
+      case "price_asc":
+        sortOption = { priceInit: 1 }; // Sắp xếp giá từ thấp đến cao
+        break;
+      case "price_desc":
+        sortOption = { priceInit: -1 }; // Sắp xếp giá từ cao đến thấp
+        break;
+      case "newest":
+        sortOption = { createdAt: -1 }; // Sắp xếp từ mới nhất
+        break;
+      case "oldest":
+        sortOption = { createdAt: 1 }; // Sắp xếp từ cũ nhất
+        break;
+      default:
+        sortOption = { createdAt: -1 }; // Mặc định là từ mới nhất
+    }
+
+    const result = await Products.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(pageSize);
+
+    // Đếm tổng số sản phẩm với bộ lọc
+    const totalProducts = await Products.countDocuments(filter);
+    const totalPages = Math.ceil(totalProducts / pageSize);
+
+    return res.status(200).send({
+      message: "Success",
+      data: result,
+      pagination: {
+        totalProducts,
+        totalPages,
+        currentPage: pageNum,
+        pageSize,
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    handelError(err, res);
+  }
+};
+
+exports.getProductsByName = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, value } = req.query;
+
+    const filter = { name: { $regex: value, $options: "i" } };
+
+    const pageNum = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+    const skip = (pageNum - 1) * pageSize;
+
+    const result = await Products.find(filter).skip(skip).limit(pageSize);
+
+    // Đếm tổng số sản phẩm với bộ lọc
+    const totalProducts = await Products.countDocuments(filter);
+    const totalPages = Math.ceil(totalProducts / pageSize);
+
+    return res.status(200).send({
+      message: "Success",
+      data: result,
+      pagination: {
+        totalProducts,
+        totalPages,
+        currentPage: pageNum,
+        pageSize,
+      },
+    });
+  } catch (err) {
+    console.log(err);
     handelError(err, res);
   }
 };

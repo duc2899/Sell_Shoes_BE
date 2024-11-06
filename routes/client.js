@@ -5,6 +5,8 @@ router.get("/getAllCategories", clientController.getAllCategories);
 router.get("/getInforClient", clientController.getInforClient);
 router.get("/getHotProducts", clientController.getHotProducts);
 router.get("/getProductByName", clientController.getProductByName);
+router.get("/getProductsByType", clientController.getProductsByType);
+router.get("/getProductsByName", clientController.getProductsByName);
 router.get(
   "/getAllOriginsWithDesigns",
   clientController.getAllOriginsWithDesigns

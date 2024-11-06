@@ -80,7 +80,6 @@ exports.getAllProducts = async (req, res, next) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     return res.status(200).send({
-      status: 200,
       message: "Find products successfully",
       data: products,
       pagination: {
