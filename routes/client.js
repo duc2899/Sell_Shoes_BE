@@ -7,6 +7,7 @@ router.get("/getHotProducts", clientController.getHotProducts);
 router.get("/getProductByName", clientController.getProductByName);
 router.get("/getProductsByType", clientController.getProductsByType);
 router.get("/getProductsByName", clientController.getProductsByName);
+router.post("/getProductsByCode", clientController.getProductsByCode);
 router.get(
   "/getAllOriginsWithDesigns",
   clientController.getAllOriginsWithDesigns

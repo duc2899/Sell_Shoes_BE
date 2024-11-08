@@ -1,3 +1,5 @@
+const removeAccents = require("remove-accents");
+
 const Products = require("../models/products");
 const Categories = require("../models/categories");
 const Origins = require("../models/origins");
@@ -93,6 +95,31 @@ exports.getProductByName = async (req, res, next) => {
   }
 };
 
+exports.getProductsByCode = async (req, res, next) => {
+  try {
+    const { codes } = req.body;
+
+    // Kiểm tra nếu mảng codes trống
+    if (!codes || codes.length === 0) {
+      return res.status(400).send({
+        message: "Codes array cannot be empty",
+      });
+    }
+
+    // Tìm các sản phẩm có mã code trong mảng codes
+    const result = await Products.find({ code: { $in: codes } });
+
+    // Trả về kết quả
+    return res.status(200).send({
+      message: "success",
+      data: result,
+    });
+  } catch (err) {
+    console.log(err);
+    handelError(err, res); // Xử lý lỗi nếu có
+  }
+};
+
 exports.getProductsByType = async (req, res, next) => {
   try {
     const {
@@ -111,20 +138,24 @@ exports.getProductsByType = async (req, res, next) => {
     // Khởi tạo bộ lọc, chỉ thêm điều kiện nếu filterType và filterValue hợp lệ
     const filter = {};
 
-    if (minPrice || maxPrice) {
-      filter.priceInit = {};
-      if (minPrice) filter.priceInit.$gte = parseFloat(minPrice); // Lọc giá >= minPrice
-      if (maxPrice) filter.priceInit.$lte = parseFloat(maxPrice); // Lọc giá <= maxPrice
-    }
+    // Nếu filterType là "allProducts", không cần thêm bộ lọc
+    if (filterType !== "allProducts") {
+      // Thêm bộ lọc giá nếu có
+      if (minPrice || maxPrice) {
+        filter.priceInit = {};
+        if (minPrice) filter.priceInit.$gte = parseFloat(minPrice); // Lọc giá >= minPrice
+        if (maxPrice) filter.priceInit.$lte = parseFloat(maxPrice); // Lọc giá <= maxPrice
+      }
 
-    if (
-      filterType &&
-      filterValue &&
-      ["origin", "design"].includes(filterType)
-    ) {
-      filter[filterType] = filterValue;
+      // Thêm bộ lọc theo loại nếu filterType và filterValue hợp lệ
+      if (
+        filterType &&
+        filterValue &&
+        ["origin", "design"].includes(filterType)
+      ) {
+        filter[filterType] = filterValue;
+      }
     }
-
     // Xác định tùy chọn sắp xếp dựa trên tham số `sort`
     let sortOption = { createdAt: -1 }; // mặc định sắp xếp từ mới nhất
     switch (sort) {
@@ -179,7 +210,7 @@ exports.getProductsByName = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, value } = req.query;
 
-    const filter = { name: { $regex: value, $options: "i" } };
+    const filter = { name: { $regex: `${value}`, $options: "i" } };
 
     const pageNum = parseInt(page, 10);
     const pageSize = parseInt(limit, 10);
