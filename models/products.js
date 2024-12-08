@@ -58,6 +58,9 @@ const productSechema = new mongoose.Schema({
     type: Date,
     default: () => moment.tz("Asia/Ho_Chi_Minh").add(7, "hours").toDate(),
   },
+  creator: {
+    type: String,
+  },
 });
 
 // Middleware to update 'updatedAt' before saving the document

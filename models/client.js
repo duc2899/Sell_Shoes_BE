@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const moment = require("moment-timezone");
 
 // Mảng các giá trị danh mục cố định ban đầu
 const clientSchema = new mongoose.Schema({
@@ -12,6 +13,14 @@ const clientSchema = new mongoose.Schema({
   contact: {
     type: String,
     required: [true, "Contact is required"],
+  },
+  createdAt: {
+    type: Date,
+    default: () => moment.tz("Asia/Ho_Chi_Minh").add(7, "hours").toDate(),
+  },
+  updateAt: {
+    type: Date,
+    default: () => moment.tz("Asia/Ho_Chi_Minh").add(7, "hours").toDate(),
   },
 });
 

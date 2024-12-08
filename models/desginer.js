@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const moment = require("moment-timezone");
 
 // Mảng các giá trị danh mục cố định ban đầu
 const designsSechema = new mongoose.Schema({
@@ -21,6 +22,17 @@ const designsSechema = new mongoose.Schema({
       // Bạn có thể thêm các trường khác nếu cần
     },
     required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: () => moment.tz("Asia/Ho_Chi_Minh").add(7, "hours").toDate(),
+  },
+  updateAt: {
+    type: Date,
+    default: () => moment.tz("Asia/Ho_Chi_Minh").add(7, "hours").toDate(),
+  },
+  creator: {
+    type: String,
   },
 });
 

@@ -54,7 +54,7 @@ exports.login = async (req, res) => {
       { id: user._id, role: user.role },
       process.env.SECRET_KEY,
       {
-        expiresIn: "2m",
+        expiresIn: "3h",
       }
     );
     user.token = token;
